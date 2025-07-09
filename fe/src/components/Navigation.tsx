@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
 const Navigation = () => {
@@ -15,94 +14,47 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 urban-glass backdrop-blur-urban border-b border-urban-steel/20">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div className="font-display text-3xl font-black text-white tracking-wider">
-            SELL<span className="text-white">BARBERS</span>
+    <nav className="fixed top-6 left-0 right-0 z-50 flex justify-center px-8 pr-14">
+      <div className="w-full max-w-[815px] h-11 relative mx-1 ">
+        {/* Glassy background */}
+        <div className="w-full h-11 absolute bg-white/20 rounded-3xl backdrop-blur-xl " />
+        {/* Flex container for logo and links group */}
+        <div className="relative h-11 flex items-center justify-between z-10 pl-4 pr-4">
+          {/* Logo */}
+          <div className="font-title text-lg font-bold text-orange-200">
+            SELLBARBERS
           </div>
-          
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <button 
-              onClick={() => scrollToSection('home')}
-              className="text-urban-black hover:text-urban-neon transition-colors duration-300 font-urban font-medium uppercase tracking-wide"
-            >
-              Home
-            </button>
-            <button 
-              onClick={() => scrollToSection('booking')}
-              className="text-urban-black hover:text-urban-neon transition-colors duration-300 font-urban font-medium uppercase tracking-wide"
-            >
-              Booking
-            </button>
-            <button 
-              onClick={() => scrollToSection('about')}
-              className="text-urban-black hover:text-urban-neon transition-colors duration-300 font-urban font-medium uppercase tracking-wide"
-            >
-              About
-            </button>
-            <button 
-              onClick={() => scrollToSection('contact')}
-              className="text-urban-black hover:text-urban-neon transition-colors duration-300 font-urban font-medium uppercase tracking-wide"
-            >
-              Contact
-            </button>
-            <Link 
-              to="/login"
-              className="text-urban-black hover:text-urban-neon transition-colors duration-300 font-urban font-medium uppercase tracking-wide border border-urban-neon/30 px-3 py-1 rounded hover:border-urban-neon"
-            >
-              Login
+          {/* Desktop Links */}
+          <div className="hidden md:flex items-center gap-2">
+            <button className="px-3 py-1 text-zinc-800 text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('home')}>Home</button>
+            <button className="px-3 py-1 text-zinc-800 text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('booking')}>Booking</button>
+            <button className="px-3 py-1 text-zinc-800 text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('about')}>About</button>
+            <button className="px-3 py-1 text-zinc-800 text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('contact')}>Contact</button>
+            <Link to="/login" className="w-30 h-7 relative bg-zinc-800 rounded-[58px] shadow-md flex items-center justify-center ml-1">
+              <span className="text-white text-[15px] font-semibold font-title leading-[9.28px] px-3">Login</span>
             </Link>
           </div>
-
-          {/* Mobile Menu Button */}
-          <button 
-            className="md:hidden flex flex-col space-y-1"
+          {/* Hamburger menu button for mobile */}
+          <button
+            className="md:hidden flex flex-col justify-center items-center w-8 h-8"
             onClick={() => setIsOpen(!isOpen)}
+            aria-label="Toggle menu"
           >
-            <span className={`block w-6 h-0.5 bg-urban-neon transition-transform duration-300 ${isOpen ? 'rotate-45 translate-y-1.5' : ''}`}></span>
-            <span className={`block w-6 h-0.5 bg-urban-neon transition-opacity duration-300 ${isOpen ? 'opacity-0' : ''}`}></span>
-            <span className={`block w-6 h-0.5 bg-urban-neon transition-transform duration-300 ${isOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
+            <span className={`block w-6 h-0.5 bg-zinc-800 transition-transform duration-300 ${isOpen ? 'rotate-45 translate-y-1.5' : ''}`}></span>
+            <span className={`block w-6 h-0.5 bg-zinc-800 transition-opacity duration-300 ${isOpen ? 'opacity-0' : ''}`}></span>
+            <span className={`block w-6 h-0.5 bg-zinc-800 transition-transform duration-300 ${isOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
           </button>
         </div>
-
-        {/* Mobile Navigation */}
+        {/* Mobile menu */}
         {isOpen && (
-          <div className="md:hidden mt-4 py-4 border-t border-urban-steel/20">
-            <div className="flex flex-col space-y-4">
-              <button 
-                onClick={() => scrollToSection('home')}
-                className="text-left text-urban-black hover:text-urban-neon transition-colors duration-300 font-urban font-medium uppercase tracking-wide"
-              >
-                Home
-              </button>
-              <button 
-                onClick={() => scrollToSection('booking')}
-                className="text-left text-urban-black hover:text-urban-neon transition-colors duration-300 font-urban font-medium uppercase tracking-wide"
-              >
-                Booking
-              </button>
-              <button 
-                onClick={() => scrollToSection('about')}
-                className="text-left text-urban-black hover:text-urban-neon transition-colors duration-300 font-urban font-medium uppercase tracking-wide"
-              >
-                About
-              </button>
-              <button 
-                onClick={() => scrollToSection('contact')}
-                className="text-left text-urban-black hover:text-urban-neon transition-colors duration-300 font-urban font-medium uppercase tracking-wide"
-              >
-                Contact
-              </button>
-              <Link 
-                to="/login"
-                className="text-left text-urban-black hover:text-urban-neon transition-colors duration-300 font-urban font-medium uppercase tracking-wide border border-urban-neon/30 px-3 py-1 rounded hover:border-urban-neon inline-block"
-                onClick={() => setIsOpen(false)}
-              >
-                Login
-              </Link>
-            </div>
+          <div className="md:hidden absolute top-12 left-0 w-full bg-white/90 rounded-b-3xl shadow-lg z-20 flex flex-col items-center py-4 gap-2">
+            <button className="w-full text-zinc-800 text-[15px] font-semibold font-title py-2" onClick={() => scrollToSection('home')}>Home</button>
+            <button className="w-full text-zinc-800 text-[15px] font-semibold font-title py-2" onClick={() => scrollToSection('booking')}>Booking</button>
+            <button className="w-full text-zinc-800 text-[15px] font-semibold font-title py-2" onClick={() => scrollToSection('about')}>About</button>
+            <button className="w-full text-zinc-800 text-[15px] font-semibold font-title py-2" onClick={() => scrollToSection('contact')}>Contact</button>
+            <Link to="/login" className="w-full flex justify-center">
+              <span className="bg-zinc-800 rounded-[58px] shadow-md text-white text-[15px] font-semibold font-title px-6 py-2">Login</span>
+            </Link>
           </div>
         )}
       </div>

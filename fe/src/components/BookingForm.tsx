@@ -138,9 +138,9 @@ const BookingForm = () => {
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="font-display text-5xl md:text-6xl font-black text-urban-white mb-4 tracking-wide">
+            <h2 className="font-[Merriweather] text-5xl md:text-6xl font-black text-urban-white mb-4 tracking-wide">
               BOOK YOUR
-              <span className="text-urban-neon text-shadow-urban-neon"> SESSION</span>
+              <span className="font-[Merriweather] text-primary"> SESSION</span>
             </h2>
             <p className="text-lg text-urban-silver max-w-2xl mx-auto font-urban font-light">
               Scegli il tuo urban stylist, seleziona una data e preparati per una trasformazione totale.

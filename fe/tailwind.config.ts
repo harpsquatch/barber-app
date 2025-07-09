@@ -20,11 +20,12 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'urban': ['Inter', 'system-ui', 'sans-serif'],
-				'display': ['Oswald', 'Impact', 'sans-serif'],
-				'sans': ['Inter', 'system-ui', 'sans-serif'],
-				'playfair': ['Playfair Display', 'serif'],
-			},
+				title: ['Poppins', 'sans-serif'],
+				body: ['Poppins', 'sans-serif'],
+				praise: ['Praise', 'cursive'],
+				kaushan: ['Kaushan', 'cursive'],
+				// ...other font families if needed
+			  },
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -86,7 +87,11 @@ export default {
 					gold: '#D4AF37',
 					beige: '#F5F2E8',
 					white: '#FFFFFF'
-				}
+				},
+				primary: '#fed7aa', // Orange
+				dark: '#27272a',    // Zinc-800
+				neutral: '#262626', // Neutral-800
+				light: '#ffffff',   // White
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

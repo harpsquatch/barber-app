@@ -10,38 +10,42 @@ const HeroSection = () => {
   };
 
   return (
-    <section id="home" className="min-h-screen relative flex flex-col items-center justify-center overflow-hidden">
+    <section id="home" className="relative flex flex-col justify-center items-start overflow-hidden h-screen">
       {/* Background image */}
       <div className="absolute inset-0">
         <img 
-          src="/lovable-uploads/7970aa1a-db9a-4e14-a8c7-f23315561b1f.png"
+          src="/lovable-uploads/hero.png"
           alt="Barbershop interior"
           className="w-full h-full object-cover"
         />
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black/60" />
+        {/* Removed the dark overlay */}
       </div>
       
-      {/* Button sovrapposto al centro e più basso, allineato verticalmente con il booking */}
-      <div className="relative z-10 absolute bottom-16 left-8 animate-fade-in">        
-        <Button 
-          onClick={scrollToBooking}
-          size="lg"
-          className="relative bg-gradient-to-r from-cyan-400/20 via-blue-400/30 to-cyan-300/20 backdrop-blur-md border-2 border-cyan-300/50 text-cyan-100 font-bold px-12 py-6 text-lg transition-all duration-300 hover:scale-105 rounded-none uppercase tracking-wider shadow-2xl hover:shadow-cyan-400/30 hover:border-cyan-300/70 hover:bg-gradient-to-r hover:from-cyan-400/30 hover:via-blue-400/40 hover:to-cyan-300/30 before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300"
-          style={{
-            boxShadow: '0 0 30px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-          }}
-        >
-          PRENOTA ORA
-        </Button>
-      </div>
-      
-      {/* Urban scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-urban-electric animate-bounce">
-        <div className="w-6 h-10 border-2 border-urban-electric rounded-sm flex justify-center">
-          <div className="w-1 h-3 bg-urban-electric rounded-full mt-2 animate-pulse"></div>
+      {/* Left-aligned hero content with padding */}
+      <div className="relative z-10 flex flex-col items-start justify-center h-full pl-8 md:pl-16">
+        <div className="w-120 inline-flex flex-col justify-start items-start gap-10">
+          <div className="self-stretch flex flex-col justify-start items-start gap-2.5">
+            <div className="w-80 h-34 flex items-center text-orange-200 text-8xl font-bold font-[Merriweather] leading-[90px]">
+              BARBER <br />SHOP
+            </div>
+            <div className="self-stretch h-8 flex items-center">
+              <span className="text-white text-6xl font-normal font-[kaushan] leading-tight">walk out with Style </span>
+            </div>
+          </div>
+          <div className="self-stretch h-14 inline-flex justify-start items-center gap-3">
+            {/* Orange Button */}
+            <button className="w-32 h-8 relative bg-orange-200 rounded-md shadow-md flex items-center justify-center overflow-hidden">
+              <span className="text-neutral-800 text-xs font-normal font-[Poppins]">Prenota Ora</span>
+              {/* Decorative dots (optional, can be removed or replaced with an icon) */}
+            </button>
+            {/* Outlined Button */}
+            <button className="w-28 h-8 relative rounded-md outline outline-1 outline-offset-[-1px] outline-orange-200 flex items-center justify-center overflow-hidden">
+              <span className="text-orange-200 text-xs font-normal font-[Poppins]">Prenota Ora</span>
+            </button>
+          </div>
         </div>
       </div>
+
     </section>
   );
 };

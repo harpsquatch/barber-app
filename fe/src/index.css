@@ -1,5 +1,5 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Oswald:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -85,7 +85,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-urban;
+    @apply font-body;
   }
 }
 
@@ -105,4 +105,21 @@
     border: 2px solid #00FF94;
     box-shadow: 0 0 10px rgba(0, 255, 148, 0.3);
   }
+}
+
+@font-face {
+  font-family: 'Praise';
+  src: url('/fonts/Praise.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+@font-face {
+  font-family: 'Kaushan';
+  src: url('/fonts/KaushanScript-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
