@@ -17,21 +17,21 @@ const Navigation = () => {
     <nav className="fixed top-6 left-0 right-0 z-50 flex justify-center px-8 pr-14">
       <div className="w-full max-w-[815px] h-11 relative mx-1 ">
         {/* Glassy background */}
-        <div className="w-full h-11 absolute bg-white/20 rounded-3xl backdrop-blur-xl " />
+        <div className="w-full h-11 absolute bg-black/50 rounded-3xl backdrop-blur-xl " />
         {/* Flex container for logo and links group */}
         <div className="relative h-11 flex items-center justify-between z-10 pl-4 pr-4">
           {/* Logo */}
-          <div className="font-title text-lg font-bold text-orange-200">
+          <div className="font-title text-lg font-bold text-[#FFFFFF]">
             SELLBARBERS
           </div>
           {/* Desktop Links */}
           <div className="hidden md:flex items-center gap-2">
-            <button className="px-3 py-1 text-zinc-800 text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('home')}>Home</button>
-            <button className="px-3 py-1 text-zinc-800 text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('booking')}>Booking</button>
-            <button className="px-3 py-1 text-zinc-800 text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('about')}>About</button>
-            <button className="px-3 py-1 text-zinc-800 text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('contact')}>Contact</button>
+            <button className="px-3 py-1 text-[#FFFFFF] text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('home')}>Home</button>
+            <button className="px-3 py-1 text-[#FFFFFF] text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('booking')}>Booking</button>
+            <button className="px-3 py-1 text-[#FFFFFF] text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('about')}>About</button>
+            <button className="px-3 py-1 text-[#FFFFFF] text-[15px] font-semibold font-title leading-[9.28px]" onClick={() => scrollToSection('contact')}>Contact</button>
             <Link to="/login" className="w-30 h-7 relative bg-zinc-800 rounded-[58px] shadow-md flex items-center justify-center ml-1">
-              <span className="text-white text-[15px] font-semibold font-title leading-[9.28px] px-3">Login</span>
+              <span className="text-[#FFE8DD] text-[15px] font-semibold font-title leading-[9.28px] px-3">Login</span>
             </Link>
           </div>
           {/* Hamburger menu button for mobile */}

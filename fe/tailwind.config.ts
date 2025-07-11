@@ -77,8 +77,8 @@ export default {
 					concrete: '#404040',
 					silver: '#8B8B8B',
 					white: '#F5F5F5',
-					neon: '#00FF94',
-					electric: '#00D4FF',
+					neon: '#fed7aa',
+					electric: '#CC9962',
 					orange: '#FF6B35',
 					yellow: '#FFD23F'
 				},

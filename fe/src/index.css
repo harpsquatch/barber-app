@@ -96,8 +96,8 @@
   }
   
   .urban-glass {
-    background: rgba(45, 45, 45, 0.1);
-    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.308);
+    backdrop-filter: blur(30px);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
