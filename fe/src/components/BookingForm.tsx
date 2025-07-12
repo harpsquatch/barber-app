@@ -112,7 +112,25 @@ const BookingForm = () => {
     return availableDates;
   };
 
-  // Generate time slots based on working hours
+  // Generate time slots based on working hours (same logic as ModernCalendar)
+  const generateTimeSlots = (start: string, end: string, interval = 30) => {
+    const slots: string[] = [];
+    let [hour, minute] = start.split(':').map(Number);
+    const [endHour, endMinute] = end.split(':').map(Number);
+
+    while (hour < endHour || (hour === endHour && minute <= endMinute)) {
+      slots.push(
+        `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+      );
+      minute += interval;
+      if (minute >= 60) {
+        hour += 1;
+        minute -= 60;
+      }
+    }
+    return slots;
+  };
+
   const getAvailableTimeSlots = (barber: string, date: Date) => {
     const barberData = barbers.find(b => b.name === barber);
     if (!barberData) return [];
@@ -125,32 +143,8 @@ const BookingForm = () => {
     const daySchedule = barberHours.find(h => h.day === dayKey);
     if (!daySchedule || !daySchedule.available) return [];
 
-    // Generate time slots between start and end time
-    const slots: string[] = [];
-    const start = daySchedule.start;
-    const end = daySchedule.end;
-    
-    if (!start || !end) return [];
-
-    let [startHour, startMinute] = start.split(':').map(Number);
-    let [endHour, endMinute] = end.split(':').map(Number);
-    
-    let currentHour = startHour;
-    let currentMinute = startMinute;
-    
-    while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
-      const timeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
-      slots.push(timeString);
-      
-      // Add 30 minutes
-      currentMinute += 30;
-      if (currentMinute >= 60) {
-        currentHour += 1;
-        currentMinute -= 60;
-      }
-    }
-    
-    return slots;
+    // Use the same generateTimeSlots function as ModernCalendar
+    return generateTimeSlots(daySchedule.start, daySchedule.end, 30);
   };
 
   // Fetch barbers from database
@@ -432,21 +426,22 @@ const BookingForm = () => {
               </div>
             ) : availableTimeSlots.length > 0 ? (
               <>
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-                  {availableTimeSlots.map((time) => (
-                    <button
-                      key={time}
-                      onClick={() => handleTimeSelect(time)}
-                      className={`border-2 rounded-2xl p-4 transition-all duration-300 hover:border-urban-neon ${
-                        selectedTime === time 
-                          ? 'border-urban-neon bg-urban-neon/10 text-urban-neon' 
-                          : 'border-urban-steel text-urban-white hover:text-urban-neon'
-                      } urban-glass font-display font-bold tracking-wide flex items-center justify-center space-x-2`}
-                    >
-                      <Clock className="w-4 h-4" />
-                      <span>{time}</span>
-                    </button>
-                  ))}
+                <div className="max-h-64 overflow-y-auto pr-2">
+                  <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                    {availableTimeSlots.map((time) => (
+                      <button
+                        key={time}
+                        onClick={() => handleTimeSelect(time)}
+                        className={`border-2 rounded-2xl p-4 transition-all duration-300 hover:border-urban-neon w-full h-16 ${
+                          selectedTime === time 
+                            ? 'border-urban-neon bg-urban-neon/10 text-urban-neon' 
+                            : 'border-urban-steel text-urban-white hover:text-urban-neon'
+                        } urban-glass font-display font-bold tracking-wide flex items-center justify-center`}
+                      >
+                        <span className="text-sm">{time}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 
                 <p className="text-center text-urban-silver font-urban">
