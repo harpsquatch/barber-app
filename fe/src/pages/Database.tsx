@@ -8,8 +8,21 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Database, Users, MessageSquare, Search, Mail, Phone, Calendar, User, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useBookings } from '@/contexts/BookingContext';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
+
+interface Booking {
+  id: number;
+  name: string;
+  email?: string;
+  phone: string;
+  service: string;
+  date: string;
+  time: string;
+  barber_id: number;
+  status: string;
+  created_at: string;
+}
 
 interface Client {
   id: string;
@@ -23,43 +36,81 @@ interface Client {
 }
 
 const DatabasePage = () => {
-  const { bookings } = useBookings();
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [messageText, setMessageText] = useState('');
   const [messageType, setMessageType] = useState<'sms' | 'email'>('sms');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Estrae i clienti dalle prenotazioni
+  // Fetch bookings from database
   useEffect(() => {
-    const clientsMap = new Map<string, Client>();
-    
-    bookings.forEach(booking => {
-      const clientKey = `${booking.name.toLowerCase()}_${booking.phone}`;
-      
-      if (clientsMap.has(clientKey)) {
-        const existingClient = clientsMap.get(clientKey)!;
-        existingClient.totalBookings += 1;
-        existingClient.services = [...new Set([...existingClient.services, booking.service])];
-        if (new Date(booking.date) > new Date(existingClient.lastBooking)) {
-          existingClient.lastBooking = booking.date;
-        }
-      } else {
-        clientsMap.set(clientKey, {
-          id: clientKey,
-          name: booking.name,
-          email: booking.email,
-          phone: booking.phone,
-          totalBookings: 1,
-          lastBooking: booking.date,
-          services: [booking.service],
-          status: 'active'
-        });
-      }
-    });
+    const fetchBookings = async () => {
+      try {
+        setIsLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-    setClients(Array.from(clientsMap.values()));
-  }, [bookings]);
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('id, name, email, phone, service, date, time, barber_id, status, created_at')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Errore nel fetch dei bookings:', error);
+          toast({
+            title: "Errore",
+            description: "Impossibile caricare i dati dei clienti.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        setBookings(data || []);
+
+        // Process bookings to create clients
+        const clientsMap = new Map<string, Client>();
+
+        data?.forEach((booking: Booking) => {
+          const clientKey = `${booking.name.toLowerCase()}_${booking.phone}`;
+          
+          if (clientsMap.has(clientKey)) {
+            const existingClient = clientsMap.get(clientKey)!;
+            existingClient.totalBookings += 1;
+            existingClient.services = [...new Set([...existingClient.services, booking.service])];
+            if (new Date(booking.date) > new Date(existingClient.lastBooking)) {
+              existingClient.lastBooking = booking.date;
+            }
+          } else {
+            clientsMap.set(clientKey, {
+              id: clientKey,
+              name: booking.name,
+              email: booking.email,
+              phone: booking.phone,
+              totalBookings: 1,
+              lastBooking: booking.date,
+              services: [booking.service],
+              status: 'active'
+            });
+          }
+        });
+
+        setClients(Array.from(clientsMap.values()));
+      } catch (error) {
+        console.error('Errore nel fetch dei bookings:', error);
+        toast({
+          title: "Errore",
+          description: "Impossibile caricare i dati dei clienti.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, []);
 
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -218,19 +269,28 @@ const DatabasePage = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-auto max-h-96">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">Sel.</TableHead>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Contatti</TableHead>
-                          <TableHead>Prenotazioni</TableHead>
-                          <TableHead>Ultimo Appuntamento</TableHead>
-                          <TableHead>Servizi</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredClients.map((client) => (
+                    {isLoading ? (
+                      <div className="text-center py-8">
+                        <p className="text-salon-black/70">Caricamento clienti...</p>
+                      </div>
+                    ) : filteredClients.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-salon-black/70">Nessun cliente trovato</p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">Sel.</TableHead>
+                            <TableHead>Nome</TableHead>
+                            <TableHead>Contatti</TableHead>
+                            <TableHead>Prenotazioni</TableHead>
+                            <TableHead>Ultimo Appuntamento</TableHead>
+                            <TableHead>Servizi</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredClients.map((client) => (
                           <TableRow key={client.id}>
                             <TableCell>
                               <input
@@ -277,6 +337,7 @@ const DatabasePage = () => {
                         ))}
                       </TableBody>
                     </Table>
+                    )}
                   </div>
                 </CardContent>
               </Card>

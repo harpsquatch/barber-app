@@ -11,28 +11,30 @@ import { ArrowLeft, Lock, User } from 'lucide-react';
 import Dashboard from './Dashboard';
 
 interface LoginForm {
-  username: string;
+  email: string;
   password: string;
 }
 
 const Login = () => {
   const { isAuthenticated, login } = useAuth();
   const [error, setError] = useState('');
-  
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<LoginForm>({
     defaultValues: {
-      username: '',
+      email: '',
       password: '',
     },
   });
 
-  const onSubmit = (data: LoginForm) => {
-    const success = login(data.username, data.password);
+  const onSubmit = async (data: LoginForm) => {
+    setIsLoading(true);
+    setError('');
+    const success = await login(data.email, data.password);
     if (!success) {
       setError('Credenziali non valide. Riprova.');
-    } else {
-      setError('');
     }
+    setIsLoading(false);
   };
 
   if (isAuthenticated) {
@@ -69,17 +71,19 @@ const Login = () => {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="username"
+                  name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-salon-black font-medium">Nome Utente</FormLabel>
+                      <FormLabel className="text-salon-black font-medium">Email</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-salon-black/50" />
                           <Input 
                             {...field} 
+                            type="email"
                             className="pl-10 rounded-full border-salon-gold/30 focus:border-salon-gold"
-                            placeholder="Inserisci nome utente"
+                            placeholder="Inserisci email"
+                            disabled={isLoading}
                           />
                         </div>
                       </FormControl>
@@ -102,6 +106,7 @@ const Login = () => {
                             type="password"
                             className="pl-10 rounded-full border-salon-gold/30 focus:border-salon-gold"
                             placeholder="Inserisci password"
+                            disabled={isLoading}
                           />
                         </div>
                       </FormControl>
@@ -119,8 +124,9 @@ const Login = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-gradient-to-r from-salon-gold to-yellow-500 hover:from-salon-gold/90 hover:to-yellow-500/90 text-white font-medium py-3 rounded-full text-lg shadow-lg"
+                  disabled={isLoading}
                 >
-                  Accedi
+                  {isLoading ? 'Accedi...' : 'Accedi'}
                 </Button>
               </form>
             </Form>

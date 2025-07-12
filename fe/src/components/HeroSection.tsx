@@ -37,11 +37,12 @@ const HeroSection = () => {
               <div className="self-stretch h-14 inline-flex justify-start items-center gap-3">
                 {/* Orange Button */}
                 <button className="w-32 h-8 relative bg-orange-200 rounded-md shadow-md flex items-center justify-center overflow-hidden">
-                  <span className="text-neutral-800 text-xs font-normal font-[Poppins]">Prenota Ora</span>
+                  <span className="text-neutral-800 text-xs font-normal font-[Poppins]">Prenota Ora ✧
+                  </span>
                 </button>
                 {/* Outlined Button */}
                 <button className="w-28 h-8 relative rounded-md outline outline-1 outline-offset-[-1px] outline-orange-200 flex items-center justify-center overflow-hidden">
-                  <span className="text-orange-200 text-xs font-normal font-[Poppins]">Prenota Ora</span>
+                  <span className="text-orange-200 text-xs font-normal font-[Poppins]">Contattaci</span>
                 </button>
               </div>
             </div>

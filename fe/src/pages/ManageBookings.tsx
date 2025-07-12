@@ -5,20 +5,104 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar, Clock, User, Phone, Mail, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ModernCalendar from '@/components/ModernCalendar';
-import { useBookings } from '@/contexts/BookingContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { toast } from '@/hooks/use-toast';
+import { Booking as ContextBooking } from '@/contexts/BookingContext';
+
+interface Booking {
+  id: number;
+  name: string;
+  email?: string;
+  phone: string;
+  service: string;
+  date: string;
+  time: string;
+  barber_id?: number;
+  status: string;
+  created_at: string;
+}
 
 const ManageBookings = () => {
-  const { bookings, updateBookingStatus } = useBookings();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Fetch bookings from database
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('id, name, email, phone, service, date, time, barber_id, status, created_at')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching bookings:', error);
+          toast({
+            title: "Errore",
+            description: "Impossibile caricare le prenotazioni.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        setBookings(data || []);
+      } catch (error) {
+        console.error('Error fetching bookings:', error);
+        toast({
+          title: "Errore",
+          description: "Impossibile caricare le prenotazioni.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchBookings();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);
+
+  const updateBookingStatus = async (bookingId: number, newStatus: string) => {
+    // Update booking status in database
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: newStatus })
+      .eq('id', bookingId);
+
+    if (error) {
+      console.error('Error updating booking status:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare lo stato della prenotazione.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Update local state
+    setBookings(prev => prev.map(booking => 
+      booking.id === bookingId 
+        ? { ...booking, status: newStatus }
+        : booking
+    ));
+
+    toast({
+      title: "Stato aggiornato",
+      description: `Prenotazione ${newStatus === 'confirmed' ? 'confermata' : 'annullata'} con successo.`
+    });
+  };
 
   if (!isAuthenticated) {
     return null;
@@ -104,7 +188,11 @@ const ManageBookings = () => {
 
           {/* Calendario moderno */}
           <div className="mb-8">
-            <ModernCalendar bookings={bookings} />
+            <ModernCalendar bookings={bookings.map(booking => ({
+              ...booking,
+              barber: booking.barber_id ? `Barber ${booking.barber_id}` : 'Unknown',
+              status: booking.status as 'confirmed' | 'cancelled' | 'pending'
+            }))} />
           </div>
 
           {/* Tabella prenotazioni */}
@@ -139,11 +227,6 @@ const ManageBookings = () => {
                               <div className="font-medium text-salon-black">
                                 {booking.name}
                               </div>
-                              {booking.notes && (
-                                <div className="text-sm text-salon-black/60">
-                                  {booking.notes}
-                                </div>
-                              )}
                             </div>
                           </div>
                         </TableCell>

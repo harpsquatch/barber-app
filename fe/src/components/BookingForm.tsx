@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { toast } from '@/hooks/use-toast';
 import { format, isSameDay, addDays } from 'date-fns';
 import { User, Clock } from 'lucide-react';
-import { useBookings } from '@/contexts/BookingContext';
+import { supabase } from '@/lib/supabase';
 
 const BackButton = ({
   onClick,
@@ -33,7 +33,6 @@ const BackButton = ({
 );
 
 const BookingForm = () => {
-  const { addBooking } = useBookings();
   const [step, setStep] = useState(1);
   const [selectedBarber, setSelectedBarber] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -43,16 +42,69 @@ const BookingForm = () => {
     surname: '',
     phone: ''
   });
+  const [barbers, setBarbers] = useState<{ barber_id: number; name: string; description?: string }[]>([]);
+  const [isLoadingBarbers, setIsLoadingBarbers] = useState(true);
+  const [workingHours, setWorkingHours] = useState<Record<string, any[]>>({});
+  const [isLoadingHours, setIsLoadingHours] = useState(false);
 
-  // Mock availability data - in a real app this would come from an API
+  // Fetch working hours from database
+  useEffect(() => {
+    const fetchWorkingHours = async () => {
+      try {
+        setIsLoadingHours(true);
+        const { data, error } = await supabase
+          .from('barber_working_hours')
+          .select('*');
+
+        if (error) {
+          console.error('Error fetching working hours:', error);
+          return;
+        }
+
+        // Group working hours by barber_id
+        const grouped = {};
+        if (data) {
+          data.forEach(hour => {
+            if (!grouped[hour.barber_id]) {
+              grouped[hour.barber_id] = [];
+            }
+            grouped[hour.barber_id].push(hour);
+          });
+        }
+        setWorkingHours(grouped);
+      } catch (error) {
+        console.error('Error fetching working hours:', error);
+      } finally {
+        setIsLoadingHours(false);
+      }
+    };
+
+    fetchWorkingHours();
+  }, []);
+
+  // Get available dates based on working hours
   const getAvailableDates = (barber: string) => {
     const today = new Date();
     const availableDates: Date[] = [];
     
-    // Generate available dates for the next 30 days (excluding Sundays for example)
+    // Find the barber's working hours
+    const barberData = barbers.find(b => b.name === barber);
+    if (!barberData) return [];
+
+    const barberHours = workingHours[barberData.barber_id] || [];
+    
+    // Generate available dates for the next 30 days
     for (let i = 1; i <= 30; i++) {
       const date = addDays(today, i);
-      if (date.getDay() !== 0) { // Exclude Sundays
+      const dayOfWeek = date.getDay();
+      
+      // Convert JavaScript day (0=Sunday) to our day format (Mon, Tue, etc.)
+      const dayMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dayKey = dayMap[dayOfWeek];
+      
+      // Check if the barber works on this day
+      const daySchedule = barberHours.find(h => h.day === dayKey);
+      if (daySchedule && daySchedule.available) {
         availableDates.push(date);
       }
     }
@@ -60,15 +112,82 @@ const BookingForm = () => {
     return availableDates;
   };
 
-  // Available time slots
+  // Generate time slots based on working hours
   const getAvailableTimeSlots = (barber: string, date: Date) => {
-    // Mock time slots - in a real app this would come from an API
-    return [
-      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-      '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
-      '17:00', '17:30', '18:00', '18:30'
-    ];
+    const barberData = barbers.find(b => b.name === barber);
+    if (!barberData) return [];
+
+    const barberHours = workingHours[barberData.barber_id] || [];
+    const dayOfWeek = date.getDay();
+    const dayMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayKey = dayMap[dayOfWeek];
+    
+    const daySchedule = barberHours.find(h => h.day === dayKey);
+    if (!daySchedule || !daySchedule.available) return [];
+
+    // Generate time slots between start and end time
+    const slots: string[] = [];
+    const start = daySchedule.start;
+    const end = daySchedule.end;
+    
+    if (!start || !end) return [];
+
+    let [startHour, startMinute] = start.split(':').map(Number);
+    let [endHour, endMinute] = end.split(':').map(Number);
+    
+    let currentHour = startHour;
+    let currentMinute = startMinute;
+    
+    while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+      const timeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+      slots.push(timeString);
+      
+      // Add 30 minutes
+      currentMinute += 30;
+      if (currentMinute >= 60) {
+        currentHour += 1;
+        currentMinute -= 60;
+      }
+    }
+    
+    return slots;
   };
+
+  // Fetch barbers from database
+  useEffect(() => {
+    const fetchBarbers = async () => {
+      try {
+        setIsLoadingBarbers(true);
+        const { data, error } = await supabase
+          .from('barbers')
+          .select('barber_id, name, description')
+          .order('barber_id');
+
+        if (error) {
+          console.error('Error fetching barbers:', error);
+          toast({
+            title: "Errore",
+            description: "Impossibile caricare i barbieri.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        setBarbers(data || []);
+      } catch (error) {
+        console.error('Error fetching barbers:', error);
+        toast({
+          title: "Errore",
+          description: "Impossibile caricare i barbieri.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoadingBarbers(false);
+      }
+    };
+
+    fetchBarbers();
+  }, []);
 
   const availableDates = selectedBarber ? getAvailableDates(selectedBarber) : [];
   const availableTimeSlots = selectedBarber && selectedDate ? getAvailableTimeSlots(selectedBarber, selectedDate) : [];
@@ -93,36 +212,74 @@ const BookingForm = () => {
     setStep(4);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedDate || !selectedTime || !selectedBarber) {
       return;
     }
 
-    const newBooking = {
-      name: `${formData.name} ${formData.surname}`,
-      phone: formData.phone,
-      service: "Taglio + Barba", // Default service, could be made selectable
-      date: selectedDate.toISOString().split('T')[0],
-      time: selectedTime,
-      barber: selectedBarber,
-      notes: ""
-    };
+    try {
+      // Get barber_id from the selected barber name
+      const { data: barbers, error: barberError } = await supabase
+        .from('barbers')
+        .select('barber_id')
+        .eq('name', selectedBarber)
+        .single();
 
-    addBooking(newBooking);
-    
-    toast({
-      title: "Prenotazione Confermata!",
-      description: `Appuntamento prenotato con ${selectedBarber} per il ${selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''} alle ${selectedTime}.`,
-    });
-    
-    // Reset form
-    setStep(1);
-    setSelectedBarber('');
-    setSelectedDate(undefined);
-    setSelectedTime('');
-    setFormData({ name: '', surname: '', phone: '' });
+      if (barberError) {
+        console.error('Error finding barber:', barberError);
+        toast({
+          title: "Errore",
+          description: "Errore durante la prenotazione. Riprova.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const newBooking = {
+        name: `${formData.name} ${formData.surname}`,
+        phone: formData.phone,
+        service: "Taglio + Barba", // Default service, could be made selectable
+        date: selectedDate.toISOString().split('T')[0],
+        time: selectedTime,
+        barber_id: barbers.barber_id,
+        status: 'pending'
+      };
+
+      const { error } = await supabase
+        .from('bookings')
+        .insert([newBooking]);
+
+      if (error) {
+        console.error('Error creating booking:', error);
+        toast({
+          title: "Errore",
+          description: "Errore durante la prenotazione. Riprova.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Prenotazione Confermata!",
+        description: `Appuntamento prenotato con ${selectedBarber} per il ${selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''} alle ${selectedTime}.`,
+      });
+      
+      // Reset form
+      setStep(1);
+      setSelectedBarber('');
+      setSelectedDate(undefined);
+      setSelectedTime('');
+      setFormData({ name: '', surname: '', phone: '' });
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      toast({
+        title: "Errore",
+        description: "Errore durante la prenotazione. Riprova.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -169,43 +326,38 @@ const BookingForm = () => {
               CHOOSE YOUR <span className="text-urban-neon font-[kaushan]">Stylist</span>
             </h3>
             
-            <RadioGroup value={selectedBarber} onValueChange={handleBarberSelect}>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="relative">
-                  <label htmlFor="selim" className="cursor-pointer">
-                    <div className={`border-2 rounded-2xl p-6 transition-all duration-300 hover:border-urban-neon ${selectedBarber === 'Selim' ? 'border-urban-neon bg-urban-neon/10' : 'border-urban-steel'} urban-glass`}>
-                      <div className="flex items-center space-x-3 mb-4">
-                        <RadioGroupItem value="Selim" id="selim" className="hidden" />
-                        <User className="w-8 h-8 p-1 bg-urban-steel rounded-sm text-urban-neon" />
-                        <Label htmlFor="selim" className="text-xl font-bold text-urban-white cursor-pointer font-display tracking-wide">
-                          SELIM
-                        </Label>
-                      </div>
-                      <p className="text-urban-silver font-urban text-[12px] text-center ">
-                        Master of contemporary cuts and urban styling. Specialista in fade tecnici e design innovativi.
-                      </p>
-                    </div>
-                  </label>
-                </div>
-
-                <div className="relative">
-                  <label htmlFor="daniel" className="cursor-pointer">
-                    <div className={`border-2 rounded-2xl p-6 transition-all duration-300 hover:border-urban-neon ${selectedBarber === 'Daniel' ? 'border-urban-neon bg-urban-neon/10' : 'border-urban-steel'} urban-glass`}>
-                      <div className="flex items-center space-x-3 mb-4">
-                        <RadioGroupItem value="Daniel" id="daniel" className="hidden" />
-                        <User className="w-8 h-8 p-1 bg-urban-steel rounded-sm text-urban-electric" />
-                        <Label htmlFor="daniel" className="text-xl font-bold text-urban-white cursor-pointer font-display tracking-wide">
-                          DANIEL
-                        </Label>
-                      </div>
-                      <p className="text-urban-silver font-urban text-[12px] text-center">
-                        Veterano dello street style con 15+ anni di esperienza. Precision cuts e urban transformations.
-                      </p>
-                    </div>
-                  </label>
-                </div>
+            {isLoadingBarbers ? (
+              <div className="text-center py-8">
+                <p className="text-urban-silver font-urban">Caricamento barbieri...</p>
               </div>
-            </RadioGroup>
+            ) : barbers.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-urban-silver font-urban">Nessun barbiere disponibile al momento.</p>
+              </div>
+            ) : (
+              <RadioGroup value={selectedBarber} onValueChange={handleBarberSelect}>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {barbers.map((barber) => (
+                    <div key={barber.barber_id} className="relative">
+                      <label htmlFor={`barber-${barber.barber_id}`} className="cursor-pointer">
+                        <div className={`border-2 rounded-2xl p-6 transition-all duration-300 hover:border-urban-neon ${selectedBarber === barber.name ? 'border-urban-neon bg-urban-neon/10' : 'border-urban-steel'} urban-glass`}>
+                          <div className="flex items-center space-x-3 mb-4">
+                            <RadioGroupItem value={barber.name} id={`barber-${barber.barber_id}`} className="hidden" />
+                            <User className="w-8 h-8 p-1 bg-urban-steel rounded-sm text-urban-neon" />
+                            <Label htmlFor={`barber-${barber.barber_id}`} className="text-xl font-bold text-urban-white cursor-pointer font-display tracking-wide">
+                              {barber.name.toUpperCase()}
+                            </Label>
+                          </div>
+                          <p className="text-urban-silver font-urban text-[12px] text-center ">
+                            {barber.description || 'Barbiere esperto'}
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </RadioGroup>
+            )}
           </div>
         )}
 
@@ -223,25 +375,36 @@ const BookingForm = () => {
                 <strong className="text-urban-neon">STYLIST:</strong> {selectedBarber}
               </p>
             </div>
-            <div className="flex justify-center">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                disabled={(date) => {
-                  return date < new Date() || !availableDates.some(availableDate => isSameDay(availableDate, date));
-                }}
-                className="rounded-2xl border border-urban-steel urban-glass text-[#FFD5B1]"
-                classNames={{
-                  day_selected: "bg-urban-neon text-urban-black hover:bg-urban-neon hover:text-urban-black font-bold",
-                  day_today: "bg-urban-steel text-urban-white font-bold",
-                }}
-              />
-            </div>
-            
-            <p className="text-center text-urban-silver font-urban">
-              Le date evidenziate sono disponibili per {selectedBarber}. Clicca per continuare.
-            </p>
+            {isLoadingHours ? (
+              <div className="text-center py-8">
+                <p className="text-urban-silver font-urban">Caricamento orari disponibili...</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-center">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    disabled={(date) => {
+                      return date < new Date() || !availableDates.some(availableDate => isSameDay(availableDate, date));
+                    }}
+                    className="rounded-2xl border border-urban-steel urban-glass text-[#FFD5B1]"
+                    classNames={{
+                      day_selected: "bg-urban-neon text-urban-black hover:bg-urban-neon hover:text-urban-black font-bold",
+                      day_today: "bg-urban-steel text-urban-white font-bold",
+                    }}
+                  />
+                </div>
+                
+                <p className="text-center text-urban-silver font-urban">
+                  {availableDates.length > 0 
+                    ? `Le date evidenziate sono disponibili per ${selectedBarber}. Clicca per continuare.`
+                    : `Nessuna data disponibile per ${selectedBarber} nei prossimi 30 giorni.`
+                  }
+                </p>
+              </>
+            )}
           </div>
         )}
 
@@ -263,26 +426,40 @@ const BookingForm = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-              {availableTimeSlots.map((time) => (
-                <button
-                  key={time}
-                  onClick={() => handleTimeSelect(time)}
-                  className={`border-2 rounded-2xl p-4 transition-all duration-300 hover:border-urban-neon ${
-                    selectedTime === time 
-                      ? 'border-urban-neon bg-urban-neon/10 text-urban-neon' 
-                      : 'border-urban-steel text-urban-white hover:text-urban-neon'
-                  } urban-glass font-display font-bold tracking-wide flex items-center justify-center space-x-2`}
-                >
-                  <Clock className="w-4 h-4" />
-                  <span>{time}</span>
-                </button>
-              ))}
-            </div>
-            
-            <p className="text-center text-urban-silver font-urban">
-              Seleziona un orario disponibile per continuare con la prenotazione.
-            </p>
+            {isLoadingHours ? (
+              <div className="text-center py-8">
+                <p className="text-urban-silver font-urban">Caricamento orari disponibili...</p>
+              </div>
+            ) : availableTimeSlots.length > 0 ? (
+              <>
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                  {availableTimeSlots.map((time) => (
+                    <button
+                      key={time}
+                      onClick={() => handleTimeSelect(time)}
+                      className={`border-2 rounded-2xl p-4 transition-all duration-300 hover:border-urban-neon ${
+                        selectedTime === time 
+                          ? 'border-urban-neon bg-urban-neon/10 text-urban-neon' 
+                          : 'border-urban-steel text-urban-white hover:text-urban-neon'
+                      } urban-glass font-display font-bold tracking-wide flex items-center justify-center space-x-2`}
+                    >
+                      <Clock className="w-4 h-4" />
+                      <span>{time}</span>
+                    </button>
+                  ))}
+                </div>
+                
+                <p className="text-center text-urban-silver font-urban">
+                  Seleziona un orario disponibile per continuare con la prenotazione.
+                </p>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-urban-silver font-urban">
+                  Nessun orario disponibile per questa data. Seleziona un'altra data.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
