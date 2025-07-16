@@ -42,6 +42,11 @@ const BookingForm = () => {
     surname: '',
     phone: ''
   });
+  const [selectedService, setSelectedService] = useState('');
+  const [showServiceInput, setShowServiceInput] = useState(false);
+  const [serviceSearchTerm, setServiceSearchTerm] = useState('');
+  const [availableServices, setAvailableServices] = useState<{ service_id: number; category: string; name: string; price: string }[]>([]);
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [barbers, setBarbers] = useState<{ barber_id: number; name: string; description?: string }[]>([]);
   const [isLoadingBarbers, setIsLoadingBarbers] = useState(true);
   const [workingHours, setWorkingHours] = useState<Record<string, any[]>>({});
@@ -147,6 +152,46 @@ const BookingForm = () => {
     return generateTimeSlots(daySchedule.start, daySchedule.end, 30);
   };
 
+  // Fetch services from database
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setIsLoadingServices(true);
+        const { data, error } = await supabase
+          .from('services')
+          .select('service_id, category, name, price')
+          .order('service_id');
+
+        if (error) {
+          console.error('Error fetching services:', error);
+          toast({
+            title: "Errore",
+            description: "Impossibile caricare i servizi.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        setAvailableServices(data || []);
+        // Set default service if available
+        if (data && data.length > 0 && !selectedService) {
+          setSelectedService(data[0].name);
+        }
+      } catch (error) {
+        console.error('Error fetching services:', error);
+        toast({
+          title: "Errore",
+          description: "Impossibile caricare i servizi.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoadingServices(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
   // Fetch barbers from database
   useEffect(() => {
     const fetchBarbers = async () => {
@@ -234,7 +279,7 @@ const BookingForm = () => {
       const newBooking = {
         name: `${formData.name} ${formData.surname}`,
         phone: formData.phone,
-        service: "Taglio + Barba", // Default service, could be made selectable
+        service: selectedService,
         date: selectedDate.toISOString().split('T')[0],
         time: selectedTime,
         barber_id: barbers.barber_id,
@@ -266,6 +311,9 @@ const BookingForm = () => {
       setSelectedDate(undefined);
       setSelectedTime('');
       setFormData({ name: '', surname: '', phone: '' });
+      setSelectedService(availableServices.length > 0 ? availableServices[0].name : '');
+      setShowServiceInput(false);
+      setServiceSearchTerm('');
     } catch (error) {
       console.error('Error creating booking:', error);
       toast({
@@ -515,6 +563,61 @@ const BookingForm = () => {
                 />
               </div>
 
+              {/* Service Selection */}
+              <div className="space-y-2">
+                <Label className="text-urban-white font-medium font-urban uppercase tracking-wide">
+                  Servizio
+                </Label>
+                
+                {!showServiceInput ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowServiceInput(true)}
+                    className="w-full border-2 border-urban-steel rounded-xl p-3 bg-urban-charcoal text-urban-white font-urban text-left hover:border-urban-neon transition-colors cursor-pointer"
+                  >
+                    {selectedService}
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <Input
+                      type="text"
+                      placeholder="Cerca servizio..."
+                      value={serviceSearchTerm}
+                      onChange={(e) => setServiceSearchTerm(e.target.value)}
+                      className="border-urban-steel focus:border-urban-neon bg-urban-charcoal text-urban-white rounded-xl"
+                      autoFocus
+                    />
+                    <div className="max-h-32 overflow-y-auto border-2 border-urban-steel rounded-xl bg-urban-charcoal">
+                      {availableServices
+                        .filter(service => 
+                          service.name.toLowerCase().includes(serviceSearchTerm.toLowerCase())
+                        )
+                        .map((service) => (
+                          <button
+                            key={service.service_id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedService(service.name);
+                              setShowServiceInput(false);
+                              setServiceSearchTerm('');
+                            }}
+                            className={`w-full text-left p-3 hover:bg-urban-steel/50 transition-colors ${
+                              selectedService === service.name 
+                                ? 'bg-urban-neon/20 text-urban-neon' 
+                                : 'text-urban-white'
+                            }`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <span>{service.name}</span>
+                              <span className="text-urban-neon text-sm">{service.price}</span>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* The "CONFERMA BOOKING" button is now outside the form */}
             </form>
           </div>
@@ -530,6 +633,7 @@ const BookingForm = () => {
           )}
           <button
             type="submit"
+            form="booking-form"
             disabled={step !== 4}
             className={`
               relative transition-all duration-700 ease-in-out

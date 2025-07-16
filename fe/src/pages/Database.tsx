@@ -181,23 +181,24 @@ const DatabasePage = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <Link to="/dashboard">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  Dashboard
-                </Button>
-              </Link>
-              <div>
-                <h1 className="font-playfair text-4xl font-bold text-salon-black mb-2 flex items-center gap-3">
-                  <Database className="h-10 w-10 text-salon-gold" />
-                  Database Clienti
-                </h1>
-                <p className="text-salon-black/70">
-                  Gestisci i tuoi clienti e invia messaggi massivi
-                </p>
-              </div>
+            <div>
+              <h1 className="font-playfair text-4xl font-bold text-salon-black mb-2 flex items-center gap-3">
+                <Database className="h-10 w-10 text-salon-gold" />
+                Database Clienti
+              </h1>
+              <p className="text-salon-black/70">
+                Gestisci i tuoi clienti e invia messaggi massivi
+              </p>
             </div>
+            <Link to="/login">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 rounded-full"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Torna alla Dashboard
+              </Button>
+            </Link>
           </div>
 
           {/* Stats Cards */}

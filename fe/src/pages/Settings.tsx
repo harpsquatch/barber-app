@@ -858,7 +858,7 @@ const Settings = () => {
                 className="flex items-center gap-2 rounded-full"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Dashboard
+                Torna alla Dashboard
               </Button>
             </div>
           </div>

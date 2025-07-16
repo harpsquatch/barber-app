@@ -1,41 +1,105 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { supabase } from '@/lib/supabase';
 
-const services = {
-  Tagli: [
-    { name: "Taglio uomo", price: "25€" },
-    { name: "Taglio bambino (fino a 12 anni)", price: "20€" },
-    { name: "Taglio + barba", price: "35€" },
-    { name: "Taglio + shampoo", price: "30€" },
-    { name: "Taglio completo (taglio + barba + shampoo)", price: "40€" },
-  ],
-  Barba: [
-    { name: "Regolazione barba", price: "15€" },
-    { name: "Rasatura tradizionale", price: "18€" },
-    { name: "Barba + trattamento", price: "22€" },
-  ],
-  Trattamenti: [
-    { name: "Trattamento cute", price: "20€" },
-    { name: "Trattamento rinforzante", price: "25€" },
-  ],
-  Colorazione: [
-    { name: "Colorazione capelli", price: "30€" },
-    { name: "Colpi di sole", price: "35€" },
-  ],
-};
+interface Service {
+  service_id: number;
+  category: string;
+  name: string;
+  price: string;
+}
 
-const tabList = Object.keys(services);
+interface ServicesByCategory {
+  [key: string]: Service[];
+}
 
 const PricingSection = () => {
-  const [activeTab, setActiveTab] = useState(tabList[0]);
+  const [services, setServices] = useState<ServicesByCategory>({});
+  const [tabList, setTabList] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState('');
+  const [pricingTitle, setPricingTitle] = useState('Listino Prezzi');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('services')
+          .select('service_id, category, name, price')
+          .order('service_id');
+
+        if (error) {
+          console.error('Error fetching services:', error);
+          return;
+        }
+
+        if (data) {
+          // Group services by category
+          const groupedServices: ServicesByCategory = {};
+          data.forEach((service: Service) => {
+            if (!groupedServices[service.category]) {
+              groupedServices[service.category] = [];
+            }
+            groupedServices[service.category].push(service);
+          });
+
+          setServices(groupedServices);
+          const categories = Object.keys(groupedServices);
+          setTabList(categories);
+          
+          // Set active tab to first category if available
+          if (categories.length > 0 && !activeTab) {
+            setActiveTab(categories[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching services:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
+  useEffect(() => {
+    const fetchPricingTitle = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('general_info')
+          .select('pricing_title')
+          .single();
+        if (error) {
+          console.error('Error fetching pricing title:', error);
+          return;
+        }
+        if (data && data.pricing_title) {
+          setPricingTitle(data.pricing_title);
+        }
+      } catch (error) {
+        console.error('Error fetching pricing title:', error);
+      }
+    };
+    fetchPricingTitle();
+  }, []);
+
+  function renderStyledTitle(title) {
+    const words = title.trim().split(' ');
+    if (words.length === 1) {
+      return <span className="font-[kaushan] text-[#EAB308]">{words[0]}</span>;
+    }
+    const lastWord = words.pop();
+    return <>{words.join(' ')} <span className="font-[kaushan] text-[#EAB308]">{lastWord}</span></>;
+  }
 
   return (
     <section className="bg-[#f7f5f2] py-12">
       <div className="max-w-6xl mx-auto px-4 md:px-8">
         {/* Title and Subtext */}
         <div className="mb-8 text-left">
-        <h2 className="text-4xl md:text-5xl font-[Merriweather] font-bold mb-8 text-salon-black">
-        Listino <span className="font-[kaushan] text-[#EAB308]">Prezzi</span>
+          <h2 className="text-4xl md:text-5xl font-[Merriweather] font-bold mb-8 text-salon-black">
+            {isLoading ? renderStyledTitle('Listino Prezzi') : renderStyledTitle(pricingTitle)}
           </h2>
           <p className="text-lg text-gray-600 ">
             Scopri i nostri servizi e trova l’opzione perfetta per il tuo stile.
@@ -79,10 +143,7 @@ const PricingSection = () => {
           {/* Right: Pricing Card */}
           <div className="flex-1 bg-white rounded-2xl shadow p-8 flex flex-col justify-center min-h-[280px]">
             <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">
-              {activeTab === "Tagli" && "Servizi Di Taglio"}
-              {activeTab === "Barba" && "Servizi Barba"}
-              {activeTab === "Trattamenti" && "Trattamenti"}
-              {activeTab === "Colorazione" && "Colorazione"}
+              {activeTab ? `Servizi ${activeTab}` : 'Servizi'}
             </h2>
             <table className="w-full">
               <thead>
@@ -92,10 +153,10 @@ const PricingSection = () => {
                 </tr>
               </thead>
               <tbody>
-                {services[activeTab].map((item, idx) => (
-                  <tr className="border-t" key={idx}>
-                    <td className="py-2 text-gray-800">{item.name}</td>
-                    <td className="py-2 text-right text-yellow-500 font-bold">{item.price}</td>
+                {services[activeTab]?.map((service, idx) => (
+                  <tr className="border-t" key={service.service_id}>
+                    <td className="py-2 text-gray-800">{service.name}</td>
+                    <td className="py-2 text-right text-yellow-500 font-bold">{service.price}</td>
                   </tr>
                 ))}
               </tbody>

@@ -1,13 +1,14 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
+import { supabase } from '@/lib/supabase';
 
 const images = [
   {
     src: "/lovable-uploads/0ee59d56-cc54-4ec8-b66e-26c73c759b00.png",
-    label: "Private rooms"
+    label: "Amazing Service"
   },
   {
     src: "/lovable-uploads/243a8d51-95cc-40ed-b77f-87e6cd5d9b8f.png",
-    label: "Work ready"
+    label: "Work ready look"
   },
   {
     src: "/lovable-uploads/610e1c13-a8d7-4d8d-b71e-2e740a65abd5.png",
@@ -20,6 +21,16 @@ const allImages = [...images, ...images];
 
 const SLIDE_DURATION = 3000; // 3 seconds
 const IMAGE_WIDTH = 400; // px, adjust to your image/container width
+
+// Responsive image widths
+const getImageWidth = () => {
+  if (typeof window !== 'undefined') {
+    if (window.innerWidth < 640) return 280; // mobile
+    if (window.innerWidth < 1024) return 320; // tablet
+    return 400; // desktop
+  }
+  return 400; // default
+};
 
 const features = [
   {
@@ -81,14 +92,55 @@ const features = [
 ];
 
 const GallerySection = () => {
+  const [galleryTitle, setGalleryTitle] = useState("L’arte della Barberia");
+  const [isLoading, setIsLoading] = useState(true);
+  const [containerWidth, setContainerWidth] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Responsive container width handler
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  // Fetch gallery title from database
+  useEffect(() => {
+    const fetchGalleryTitle = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('general_info')
+          .select('gallery_title')
+          .single();
+        if (error) {
+          console.error('Error fetching gallery title:', error);
+          return;
+        }
+        if (data && data.gallery_title) {
+          setGalleryTitle(data.gallery_title);
+        }
+      } catch (error) {
+        console.error('Error fetching gallery title:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchGalleryTitle();
+  }, []);
 
   useEffect(() => {
     let position = 0;
-    const totalWidth = IMAGE_WIDTH * images.length;
+    const totalWidth = containerWidth * images.length;
 
     const interval = setInterval(() => {
-      position += IMAGE_WIDTH;
+      position += containerWidth;
       if (sliderRef.current) {
         sliderRef.current.style.transition = "transform 0.7s cubic-bezier(.77,0,.18,1)";
         sliderRef.current.style.transform = `translateX(-${position}px)`;
@@ -106,7 +158,7 @@ const GallerySection = () => {
     }, SLIDE_DURATION);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [containerWidth]);
 
   return (
     <section className="bg-[#1D1D1D] py-16">
@@ -114,7 +166,20 @@ const GallerySection = () => {
         {/* Features/content card */}
         <div className="flex-1 flex flex-col justify-center min-w-[260px]">
           <h2 className="text-4xl md:text-5xl font-[Merriweather] font-bold mb-8 text-white">
-            L’arte della <span className="font-[kaushan] text-urban-neon">Barberia</span>
+            {(() => {
+              const title = isLoading ? "L’arte della Barberia" : galleryTitle;
+              const words = title.trim().split(" ");
+              if (words.length === 1) {
+                return <span className="font-[kaushan] text-urban-neon">{words[0]}</span>;
+              }
+              const lastWord = words.pop();
+              return (
+                <>
+                  {words.join(" ")}{" "}
+                  <span className="font-[kaushan] text-urban-neon">{lastWord}</span>
+                </>
+              );
+            })()}
           </h2>
           <ul className="space-y-6">
             {features.map((f, i) => (
@@ -129,25 +194,25 @@ const GallerySection = () => {
           </ul>
         </div>
         {/* Image card */}
-        <div className="flex-1 flex justify-center items-center min-w-[320px]">
-          <div className="relative w-full max-w-md h-full min-h-[320px] rounded-2xl overflow-hidden shadow-xl bg-[#232323] flex">
+        <div ref={containerRef} className="flex-1 flex justify-center items-center min-w-0 w-full">
+          <div className="relative w-full h-full min-h-[180px] sm:min-h-[220px] md:min-h-[260px] flex overflow-hidden px-0 py-0 rounded-2xl">
             <div
               ref={sliderRef}
-              className="flex h-full"
+              className="flex h-full w-full transition-transform duration-700"
               style={{
-                width: `${allImages.length * IMAGE_WIDTH}px`
+                width: `${allImages.length * 100}%`,
               }}
             >
               {allImages.map((img, idx) => (
                 <div
                   key={idx}
-                  className="relative flex-shrink-0"
-                  style={{ width: IMAGE_WIDTH, height: "100%" }}
+                  className="relative flex-shrink-0 w-full h-full"
+                  style={{ width: containerWidth || '100%' }}
                 >
                   <img
                     src={img.src}
                     alt={img.label}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover rounded-2xl"
                   />
                   <div className="absolute bottom-4 left-4 bg-black/70 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
                     {img.label}
